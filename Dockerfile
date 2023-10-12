@@ -1,19 +1,21 @@
-FROM centos:latest
+# Use an official lightweight Node.js alpine image as a parent image
+FROM node:14-alpine
 
-RUN yum install -y httpd \
-    zip \
-    unzip
+# Set the working directory inside the container
+WORKDIR /usr/src/app
 
-ADD https://www.free-css.com/assets/files/free-css-templates/download/page254/photogenic.zip /var/www/html/
-WORKDIR /var/www/html/
-RUN cd /etc/yum.repos.d/
-RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+# Copy package.json and package-lock.json to the container
+COPY package*.json ./
 
-RUN yum -y install java
-RUN unzip photogenic.zip
-RUN cp -rvf photogenic/* .
-RUN rm -rf photogenic photogenic.zip
+# Install application dependencies and remove unnecessary cache files in a single layer
+RUN npm install --production && \
+    npm cache clean --force
 
-CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
-EXPOSE 80 22
+# Copy only necessary application files to the container (exclude unnecessary files)
+COPY app.js ./
+
+# Expose the application port
+EXPOSE 3000
+
+# Define the command to run your application
+CMD ["node", "app.js"]
